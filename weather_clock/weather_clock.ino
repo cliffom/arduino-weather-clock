@@ -56,17 +56,43 @@ void setup() {
   // Comment out below line once you set the date & time.
   // Following line sets the RTC with an explicit date & time
   // for example to set January 13 2022 at 12:56 you would call:
-  // rtc.set(0, 3, 20, 5, 1, 2, 24);
+  //rtc.set(0, 2, 9, 5, 2, 2, 24);
+  rtc.refresh();
+  display();
 }
 
+// loop runs constantly and does the following:
+// - Refreshes data from the rtc module
+// - clears the LCD and prints the updated date and time from the rtc module
+// - gets the temperature and humidity data, once a minute at 0 seconds
+// - delays for 1000ms (1-second)
+//
+// Please note, getting the temperature and humidy date invokes a small delay
+// and when it occurs it will halt the loop for about a second longer than the
+// 1000ms delay we already impose
 void loop() {
   rtc.refresh();
+
+  // Only update the display every minute
+  if (rtc.second() == 0) {
+    display();
+  }
+
+  // Poll for temp once a minute
+  if (rtc.second() == 30) {
+    dht11Test();
+  }
+
+  //delay(1000);
+}
+
+void display() {
   lcd.clear();
   lcd.print(dateLine());
   lcd.setCursor(0, 1);
   lcd.print(timeLine());
-  //dht11Test();
-  delay(1000);
+  lcd.setCursor(6, 1);
+  lcd.print(weatherLine());
 }
 
 // dateLine returns a string representation of the current day of the week,
@@ -76,12 +102,11 @@ String dateLine() {
   String year = String(rtc.year(), DEC);
 
   // Pad with leading zeros
-  if (day.length() == 1) day = "0" + day;
+  if (day.length() == 1)
+    day = "0" + day;
 
   // Construct dateLine
-  String dateLine = daysOfTheWeek[rtc.dayOfWeek() - 1] + " " +
-                    monthsOfTheYear[rtc.month() - 1] + " " +
-                    day + " " + year;
+  String dateLine = daysOfTheWeek[rtc.dayOfWeek() - 1] + " " + monthsOfTheYear[rtc.month() - 1] + " " + day + " " + year;
 
   return dateLine;
 }
@@ -94,52 +119,58 @@ String timeLine() {
   String seconds = String(rtc.second(), DEC);
 
   // Pad with leading zeros
-  if (hours.length() == 1) hours = "0" + hours;
-  if (minutes.length() == 1) minutes = "0" + minutes;
-  if (seconds.length() == 1) seconds = "0" + seconds;
+  if (hours.length() == 1)
+    hours = "0" + hours;
+  if (minutes.length() == 1)
+    minutes = "0" + minutes;
+  if (seconds.length() == 1)
+    seconds = "0" + seconds;
 
   // Construct timeLine
-  String timeLine = hours + ":" + minutes + ":" + seconds;
+  //String timeLine = hours + ":" + minutes + ":" + seconds;
+  String timeLine = hours + ":" + minutes;
 
   return timeLine;
 }
 
-void dht11Test()
-{
-    // Attempt to read the temperature and humidity values from the DHT11 sensor.
-    int temperature = dht11.readTemperature();
+// weatherLine returns a string representation of the current
+// temperature (in F) and humidity (as a %) - Ex: 75/50
+String weatherLine() {
+  return "75F 50%";
+}
 
-    // If using ESP32 or ESP8266 (xtensa architecture), uncomment the delay below.
-    // This ensures stable readings when calling methods consecutively.
-    // delay(50);
+void dht11Test() {
+  // Attempt to read the temperature and humidity values from the DHT11 sensor.
+  int temperature = dht11.readTemperature();
+  int humidity = dht11.readHumidity();
 
-    int humidity = dht11.readHumidity();
+  // Check the results of the readings.
+  // If there are no errors, print the temperature and humidity values.
+  // If there are errors, print the appropriate error messages.
+  if (dht11Error(temperature, humidity) == false) {
+    Serial.print("Temperature: ");
+    Serial.print(temperature);
+    Serial.println(" °C");
 
-    // Check the results of the readings.
-    // If there are no errors, print the temperature and humidity values.
-    // If there are errors, print the appropriate error messages.
-    if (temperature != DHT11::ERROR_CHECKSUM && temperature != DHT11::ERROR_TIMEOUT &&
-        humidity != DHT11::ERROR_CHECKSUM && humidity != DHT11::ERROR_TIMEOUT)
-    {
-        Serial.print("Temperature: ");
-        Serial.print(temperature);
-        Serial.println(" °C");
+    Serial.print("Humidity: ");
+    Serial.print(humidity);
+    Serial.println(" %");
+  }
+}
 
-        Serial.print("Humidity: ");
-        Serial.print(humidity);
-        Serial.println(" %");
-    }
-    else
-    {
-        if (temperature == DHT11::ERROR_TIMEOUT || temperature == DHT11::ERROR_CHECKSUM)
-        {
-            Serial.print("Temperature Reading Error: ");
-            Serial.println(DHT11::getErrorString(temperature));
-        }
-        if (humidity == DHT11::ERROR_TIMEOUT || humidity == DHT11::ERROR_CHECKSUM)
-        {
-            Serial.print("Humidity Reading Error: ");
-            Serial.println(DHT11::getErrorString(humidity));
-        }
-    }
+bool dht11Error(int temperature, int humidity) {
+  bool error = false;
+
+  if (temperature == DHT11::ERROR_TIMEOUT || temperature == DHT11::ERROR_CHECKSUM) {
+    Serial.print("Temperature Reading Error: ");
+    Serial.println(DHT11::getErrorString(temperature));
+    error = true;
+  }
+  if (humidity == DHT11::ERROR_TIMEOUT || humidity == DHT11::ERROR_CHECKSUM) {
+    Serial.print("Humidity Reading Error: ");
+    Serial.println(DHT11::getErrorString(humidity));
+    error = true;
+  }
+
+  return error;
 }
