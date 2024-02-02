@@ -46,6 +46,8 @@ const String monthsOfTheYear[] = {
 };
 
 void setup() {
+  Serial.begin(9600);
+
   // set up the LCD's number of columns and rows:
   lcd.begin(lcdWidth, lcdHeight);
 
@@ -54,7 +56,7 @@ void setup() {
   // Comment out below line once you set the date & time.
   // Following line sets the RTC with an explicit date & time
   // for example to set January 13 2022 at 12:56 you would call:
-  //rtc.set(0, 37, 12, 5, 13, 2, 22);
+  // rtc.set(0, 19, 17, 5, 1, 2, 24);
 }
 
 void loop() {
@@ -63,7 +65,7 @@ void loop() {
   lcd.print(dateLine());
   lcd.setCursor(0, 1);
   lcd.print(timeLine());
-  dht11Test();
+  //dht11Test();
   delay(1000);
 }
 
