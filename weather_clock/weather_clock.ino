@@ -45,6 +45,11 @@ const String monthsOfTheYear[] = {
   "Dec"
 };
 
+struct DHT11Data {
+  int Temperature, Humidity;
+};
+DHT11Data weather = { 0, 0 };
+
 void setup() {
   Serial.begin(9600);
 
@@ -58,6 +63,7 @@ void setup() {
   // for example to set January 13 2022 at 12:56 you would call:
   //rtc.set(0, 2, 9, 5, 2, 2, 24);
   rtc.refresh();
+  updateWeather();
   display();
 }
 
@@ -80,12 +86,13 @@ void loop() {
 
   // Poll for temp once a minute
   if (rtc.second() == 30) {
-    dht11Test();
+    updateWeather();
   }
 
   //delay(1000);
 }
 
+// display writes the date and weather date to the LCD display
 void display() {
   lcd.clear();
   lcd.print(dateLine());
@@ -136,41 +143,18 @@ String timeLine() {
 // weatherLine returns a string representation of the current
 // temperature (in F) and humidity (as a %) - Ex: 75/50
 String weatherLine() {
-  return "75F 50%";
+  String temperature = String(weather.Temperature, DEC);
+  String humidity = String(weather.Humidity, DEC);
+
+  return temperature + "C " + humidity + "%";
 }
 
-void dht11Test() {
+// updateWeather updates the temperature and humidity data from
+// the DHT11 sensor
+void updateWeather() {
   // Attempt to read the temperature and humidity values from the DHT11 sensor.
   int temperature = dht11.readTemperature();
   int humidity = dht11.readHumidity();
 
-  // Check the results of the readings.
-  // If there are no errors, print the temperature and humidity values.
-  // If there are errors, print the appropriate error messages.
-  if (dht11Error(temperature, humidity) == false) {
-    Serial.print("Temperature: ");
-    Serial.print(temperature);
-    Serial.println(" °C");
-
-    Serial.print("Humidity: ");
-    Serial.print(humidity);
-    Serial.println(" %");
-  }
-}
-
-bool dht11Error(int temperature, int humidity) {
-  bool error = false;
-
-  if (temperature == DHT11::ERROR_TIMEOUT || temperature == DHT11::ERROR_CHECKSUM) {
-    Serial.print("Temperature Reading Error: ");
-    Serial.println(DHT11::getErrorString(temperature));
-    error = true;
-  }
-  if (humidity == DHT11::ERROR_TIMEOUT || humidity == DHT11::ERROR_CHECKSUM) {
-    Serial.print("Humidity Reading Error: ");
-    Serial.println(DHT11::getErrorString(humidity));
-    error = true;
-  }
-
-  return error;
+  weather = { temperature, humidity };
 }
