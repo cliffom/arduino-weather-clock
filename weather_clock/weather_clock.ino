@@ -169,7 +169,7 @@ void loop() {
   if (currentMillis - lastWeatherUpdate >= weatherUpdateInterval) {
     weather.update();
     lastWeatherUpdate = currentMillis;
-    Serial.print(
+    Serial.println(
       datetime.dateToString() + " " + 
       datetime.timeToString() + 
       ": Weather data updated"
