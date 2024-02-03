@@ -40,10 +40,16 @@ public:
     : rtc(0x68) {
     URTCLIB_WIRE.begin();
   }
+  void set(int sec, int min, int hour, int dayOfWeek, int dayOfMonth, int month, int year);
   String dateToString();
   String timeToString();
+  int seconds();
   void refresh();
 };
+
+void Datetime::set(int sec, int min, int hour, int dayOfWeek, int dayOfMonth, int month, int year) {
+  rtc.set(sec, min, hour, dayOfWeek, dayOfMonth, month, year);
+}
 
 String Datetime::dateToString() {
   String day = String(rtc.day(), DEC);
@@ -79,6 +85,10 @@ String Datetime::timeToString() {
   return time;
 }
 
+int Datetime::seconds() {
+  return rtc.second();
+}
+
 void Datetime::refresh() {
   rtc.refresh();
 }
@@ -103,11 +113,11 @@ void Weather::update() {
   Humidity = dht11.readHumidity();
 }
 
-Weather::getTemperature() {
+int Weather::getTemperature() {
   return Temperature;
 }
 
-Weather::getHumidity() {
+int Weather::getHumidity() {
   return Humidity;
 }
 
@@ -124,42 +134,61 @@ const int rs = 12, en = 11, d4 = 10, d5 = 9, d6 = 8, d7 = 7;
 LiquidCrystal lcd(rs, en, d4, d5, d6, d7);
 const int lcdWidth = 16, lcdHeight = 2;
 
-Weather* weather;
-Datetime* datetime;
+Weather weather(2);
+Datetime datetime;
 
 void setup() {
   Serial.begin(9600);
+  Serial.println("Serial communication initialized");
 
-  weather = new Weather(2);
-  datetime = new Datetime();
+  // set up the LCD's number of columns and rows:
+  lcd.begin(lcdWidth, lcdHeight);
 
-  weather->update();
+  // uncomment below to set the time
+  //datetime.set(0, 45, 11, 7, 3, 2, 24);
+
+  weather.update();
+  datetime.refresh();
+  display(
+    datetime.dateToString(),
+    datetime.timeToString(),
+    weather.toString()
+  );
 }
 
 void loop() {
+  const unsigned long weatherUpdateInterval = 60000;
+  const unsigned long loopInterval = 1000;
+
   static unsigned long lastWeatherUpdate = 0;
   unsigned long currentMillis = millis();
+  
+  datetime.refresh();
 
-  // Check if 60 seconds have passed
-  if (currentMillis - lastWeatherUpdate >= 60000) {
-    weather->update();
+  // Check if weatherUpdateInterval/1000 seconds have passed
+  if (currentMillis - lastWeatherUpdate >= weatherUpdateInterval) {
+    weather.update();
     lastWeatherUpdate = currentMillis;
-    Serial.println("Weather data updated.");
+    Serial.print(
+      datetime.dateToString() + " " + 
+      datetime.timeToString() + 
+      ": Weather data updated"
+    );
   }
 
-  datetime->refresh();
-  display(datetime->dateToString(), datetime->timeToString(), weather->toString());
+  if (datetime.seconds() == 0) {
+    display(
+      datetime.dateToString(),
+      datetime.timeToString(),
+      weather.toString()
+    );
+  }
 
-  // Print the weather and datetime information
-  Serial.println(weather->toString());
-  Serial.println(datetime->dateToString());
-  Serial.println(datetime->timeToString());
-
-  delay(1000);
+  delay(loopInterval);
 }
 
 // display writes the date and weather date to the LCD display
-void display(String date, String time, String weather) {
+void display(const String& date, const String& time, const String& weather) {
   lcd.clear();
   lcd.print(date);
   lcd.setCursor(0, 1);
