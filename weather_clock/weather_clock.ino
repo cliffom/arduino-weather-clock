@@ -3,136 +3,155 @@
 #include "LiquidCrystal.h"
 #include "uRTCLib.h"
 
-// daysOfTheWeek is an array representation of the days of the week
-// in shorthand format, starting with Sun
-const String daysOfTheWeek[] = {
-  "Sun",
-  "Mon",
-  "Tue",
-  "Wed",
-  "Thu",
-  "Fri",
-  "Sat"
-};
-
-// monthsOfTheYear is an array representation of the months of the year
-// in shorthand format
-const String monthsOfTheYear[] = {
-  "Jan",
-  "Feb",
-  "Mar",
-  "Apr",
-  "May",
-  "Jun",
-  "Jul",
-  "Aug",
-  "Sep",
-  "Oct",
-  "Nov",
-  "Dec"
-};
-
 class Datetime {
 private:
+  // Real-Time Clock (RTC) library instance for accessing time data.
   uRTCLib rtc;
+
+  // Array of day names in shorthand format, used for formatting dates.
+  const String daysOfTheWeek[7] = { "Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat" };
+
+  // Array of month names in shorthand format, used for formatting dates.
+  const String monthsOfTheYear[12] = { "Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec" };
+
 public:
+  // Constructor initializes the RTC with a default address.
   Datetime()
     : rtc(0x68) {
+    // Starts communication with the RTC module.
     URTCLIB_WIRE.begin();
   }
-  void set(int sec, int min, int hour, int dayOfWeek, int dayOfMonth, int month, int year);
-  String dateToString();
-  String timeToString();
-  int seconds();
-  void refresh();
+
+  // Sets the current date and time on the RTC module.
+  void set(int sec, int min, int hour, int dayOfWeek, int dayOfMonth, int month, int year) {
+    rtc.set(sec, min, hour, dayOfWeek, dayOfMonth, month, year);  // Sets the time and date.
+  }
+
+  // Refreshes the RTC data to ensure it has the latest date and time.
+  void refresh() {
+    rtc.refresh();
+  }
+
+  // Returns a string representation of the current date in a human-readable format.
+  String dateToString() {
+    String day = String(rtc.day(), DEC);
+    String year = String(rtc.year(), DEC);
+
+    // Pad single-digit days with a leading zero.
+    if (day.length() == 1)
+      day = "0" + day;
+
+    // Constructs the date string using day names and month names arrays.
+    String date = daysOfTheWeek[rtc.dayOfWeek() - 1] + " " + monthsOfTheYear[rtc.month() - 1] + " " + day + " " + year;
+
+    return date;
+  }
+
+  // Returns a string representation of the current time in HH:MM format.
+  String timeToString() {
+    String hours = String(rtc.hour(), DEC);
+    String minutes = String(rtc.minute(), DEC);
+
+    // Pad single-digit hours and minutes with leading zeros.
+    if (hours.length() == 1)
+      hours = "0" + hours;
+    if (minutes.length() == 1)
+      minutes = "0" + minutes;
+
+    // Constructs the time string in HH:MM format.
+    String time = hours + ":" + minutes;
+
+    return time;
+  }
+
+  // Returns the current seconds from the RTC.
+  int seconds() {
+    return rtc.second();
+  }
 };
-
-void Datetime::set(int sec, int min, int hour, int dayOfWeek, int dayOfMonth, int month, int year) {
-  rtc.set(sec, min, hour, dayOfWeek, dayOfMonth, month, year);
-}
-
-String Datetime::dateToString() {
-  String day = String(rtc.day(), DEC);
-  String year = String(rtc.year(), DEC);
-
-  // Pad with leading zeros
-  if (day.length() == 1)
-    day = "0" + day;
-
-  // Construct date
-  String date = daysOfTheWeek[rtc.dayOfWeek() - 1] + " " + monthsOfTheYear[rtc.month() - 1] + " " + day + " " + year;
-
-  return date;
-}
-
-String Datetime::timeToString() {
-  String hours = String(rtc.hour(), DEC);
-  String minutes = String(rtc.minute(), DEC);
-  String seconds = String(rtc.second(), DEC);
-
-  // Pad with leading zeros
-  if (hours.length() == 1)
-    hours = "0" + hours;
-  if (minutes.length() == 1)
-    minutes = "0" + minutes;
-  if (seconds.length() == 1)
-    seconds = "0" + seconds;
-
-  // Construct timeLine
-  //String timeLine = hours + ":" + minutes + ":" + seconds;
-  String time = hours + ":" + minutes;
-
-  return time;
-}
-
-int Datetime::seconds() {
-  return rtc.second();
-}
-
-void Datetime::refresh() {
-  rtc.refresh();
-}
 
 class Weather {
 private:
-  DHT11 dht11;
-  int Temperature;
-  int Humidity;
+  DHT11 dht11;      // DHT11 sensor instance for reading temperature and humidity.
+  int Temperature;  // Variable to store the last read temperature value.
+  int Humidity;     // Variable to store the last read humidity value.
 
 public:
+  // Constructor initializes the DHT11 sensor with the given pin.
   Weather(int pin)
     : dht11(pin) {}
-  void update();
-  int getTemperature();
-  int getHumidity();
-  String toString();
+
+  // Reads and updates the current temperature and humidity from the DHT11 sensor.
+  void update() {
+    Temperature = dht11.readTemperature();
+    Humidity = dht11.readHumidity();
+  }
+
+  // Returns the last read temperature value.
+  int getTemperature() {
+    return Temperature;
+  }
+
+  // Returns the last read humidity value.
+  int getHumidity() {
+    return Humidity;
+  }
+
+  // Returns a string representation of the current weather data in "temperatureC humidity%" format.
+  String toString() {
+    String temperature = String(Temperature, DEC);
+    String humidity = String(Humidity, DEC);
+
+    return temperature + "C " + humidity + "%";
+  }
 };
 
-void Weather::update() {
-  Temperature = dht11.readTemperature();
-  Humidity = dht11.readHumidity();
-}
+class Display {
+private:
+  // Instance of LiquidCrystal for LCD control.
+  LiquidCrystal lcd;
 
-int Weather::getTemperature() {
-  return Temperature;
-}
+  // Width of the LCD, in characters.
+  const int width = 16;
 
-int Weather::getHumidity() {
-  return Humidity;
-}
+  // Height of the LCD, in lines.
+  const int height = 2;
 
-String Weather::toString() {
-  String temperature = String(Temperature, DEC);
-  String humidity = String(Humidity, DEC);
+public:
+  // Constructor initializes the LCD display with specified pins and dimensions.
+  Display(int rs, int en, int d4, int d5, int d6, int d7)
+    : lcd(rs, en, d4, d5, d6, d7) {
+    lcd.begin(width, height);
+  }
 
-  return temperature + "C " + humidity + "%";
-}
+  // Sets the text displayed on the first line of the LCD.
+  void setLine1(String text) {
+    lcd.setCursor(0, 0);
+    lcd.print(text);
+  }
 
-// initialize the library by associating any needed LCD interface pin
-// with the arduino pin number it is connected to
-const int rs = 12, en = 11, d4 = 10, d5 = 9, d6 = 8, d7 = 7;
-LiquidCrystal lcd(rs, en, d4, d5, d6, d7);
-const int lcdWidth = 16, lcdHeight = 2;
+  // Sets the text displayed on the second line of the LCD.
+  void setLine2(String text) {
+    lcd.setCursor(0, 1);
+    lcd.print(text);
+  }
+
+  // Sets the text displayed on the LCD.
+  void updateDisplay(String line1, String line2) {
+    lcd.clear();
+    setLine1(line1);
+    setLine2(line2);
+  }
+};
+
+// Initialize a new display with the following Arduino wiring:
+// - rs=12
+// - en=11
+// - d4=10
+// - d5=9
+// - d3=8
+// - d2=7
+Display lcd(12, 11, 10, 9, 8, 7);
 
 Weather weather(2);
 Datetime datetime;
@@ -141,19 +160,15 @@ void setup() {
   Serial.begin(9600);
   Serial.println("Serial communication initialized");
 
-  // set up the LCD's number of columns and rows:
-  lcd.begin(lcdWidth, lcdHeight);
-
   // uncomment below to set the time
   //datetime.set(0, 45, 11, 7, 3, 2, 24);
 
   weather.update();
   datetime.refresh();
-  display(
+
+  lcd.updateDisplay(
     datetime.dateToString(),
-    datetime.timeToString(),
-    weather.toString()
-  );
+    datetime.timeToString() + " " + weather.toString());
 }
 
 void loop() {
@@ -162,7 +177,7 @@ void loop() {
 
   static unsigned long lastWeatherUpdate = 0;
   unsigned long currentMillis = millis();
-  
+
   datetime.refresh();
 
   // Check if weatherUpdateInterval/1000 seconds have passed
@@ -170,29 +185,14 @@ void loop() {
     weather.update();
     lastWeatherUpdate = currentMillis;
     Serial.println(
-      datetime.dateToString() + " " + 
-      datetime.timeToString() + 
-      ": Weather data updated"
-    );
+      datetime.dateToString() + " " + datetime.timeToString() + ": Weather data updated");
   }
 
   if (datetime.seconds() == 0) {
-    display(
+    lcd.updateDisplay(
       datetime.dateToString(),
-      datetime.timeToString(),
-      weather.toString()
-    );
+      datetime.timeToString() + " " + weather.toString());
   }
 
   delay(loopInterval);
-}
-
-// display writes the date and weather date to the LCD display
-void display(const String& date, const String& time, const String& weather) {
-  lcd.clear();
-  lcd.print(date);
-  lcd.setCursor(0, 1);
-  lcd.print(time);
-  lcd.setCursor(6, 1);
-  lcd.print(weather);
 }
