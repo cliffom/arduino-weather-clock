@@ -76,6 +76,16 @@ private:
   int Temperature;  // Variable to store the last read temperature value.
   int Humidity;     // Variable to store the last read humidity value.
 
+  // Checks if the temperature sensor returned an error
+  bool temperatureError() {
+    return Temperature == DHT11::ERROR_CHECKSUM || Temperature == DHT11::ERROR_TIMEOUT;
+  }
+
+  // Checks if the humidity sensor returned an error
+  bool humidityError() {
+    return Humidity == DHT11::ERROR_TIMEOUT || Humidity == DHT11::ERROR_CHECKSUM;
+  }
+
 public:
   // Constructor initializes the DHT11 sensor with the given pin.
   Weather(int pin)
@@ -87,6 +97,25 @@ public:
     Humidity = dht11.readHumidity();
   }
 
+  // Checks to see if either sensor value was an error value
+  bool error() {
+    bool errorFlag = false;
+
+    // Check for temperature error
+    if (temperatureError()) {
+      errorFlag = true;
+      Serial.println("Error: DHT11 Temperature Error");
+    }
+
+    // Check for humidity error
+    if (humidityError()) {
+      errorFlag = true;
+      Serial.println("Error: DHT11 Humidity Error");
+    }
+
+    return errorFlag;
+  }
+
   // Returns the temperature as of the last sensor reading.
   int getTemperature() {
     return Temperature;
@@ -94,8 +123,20 @@ public:
 
   // Returns a string representation of the current weather data in "temperatureC humidity%" format.
   String toString() {
-    String temperature = String(Temperature, DEC);
-    String humidity = String(Humidity, DEC);
+    String temperature;
+    String humidity;
+
+    if (temperatureError()) {
+      temperature = "--";
+    } else {
+      temperature = String(Temperature, DEC);
+    }
+
+    if (humidityError()) {
+      humidity = "--";
+    } else {
+      humidity = String(Humidity, DEC);
+    }
 
     return temperature + "C " + humidity + "%";
   }
@@ -103,24 +144,25 @@ public:
 
 class ComfortGuage {
 private:
-  int ColdPin;
-  int NormalPin;
-  int HotPin;
+  int BlueLED;
+  int GreenLED;
+  int RedLED;
+  const int Intensity = 64;
 public:
   // Constructor that tells the guage what pins to use for LEDs.
-  ComfortGuage(int coldPin, int normalPin, int hotPin) {
-    ColdPin = coldPin;
-    NormalPin = normalPin;
-    HotPin = hotPin;
+  ComfortGuage(int bluePin, int greenPin, int redPin) {
+    BlueLED = bluePin;
+    GreenLED = greenPin;
+    RedLED = redPin;
 
     reset();
   }
 
   // Sets all pins to LOW/no signal
   void reset() {
-    digitalWrite(ColdPin, LOW);
-    digitalWrite(NormalPin, LOW);
-    digitalWrite(HotPin, LOW);
+    analogWrite(BlueLED, 0);
+    analogWrite(GreenLED, 0);
+    analogWrite(RedLED, 0);
   }
 
   // Sets which LED to enable based on a rough temperate range of:
@@ -130,11 +172,18 @@ public:
   void display(int temperature) {
     reset();
     if (temperature >= 30)
-      digitalWrite(HotPin, HIGH);
+      analogWrite(RedLED, Intensity);
     else if (temperature >= 21)
-      digitalWrite(NormalPin, HIGH);
+      analogWrite(GreenLED, Intensity);
     else
-      digitalWrite(ColdPin, HIGH);
+      analogWrite(BlueLED, Intensity);
+  }
+
+  // Turns the LED yellow to indicate that there was an issue
+  void displayWarning() {
+    reset();
+    analogWrite(RedLED, Intensity);
+    analogWrite(GreenLED, Intensity);
   }
 };
 
@@ -201,11 +250,7 @@ void setup() {
 
   weather.update();
   datetime.refresh();
-  comfortGuage.display(weather.getTemperature());
-
-  lcd.updateDisplay(
-    datetime.dateToString(),
-    datetime.timeToString() + " " + weather.toString());
+  updateVisuals();
 }
 
 void loop() {
@@ -221,16 +266,32 @@ void loop() {
   if (currentMillis - lastWeatherUpdate >= weatherUpdateInterval) {
     weather.update();
     lastWeatherUpdate = currentMillis;
-    Serial.println(
-      datetime.dateToString() + " " + datetime.timeToString() + ": Weather data updated");
+    log("Weather data updated");
   }
 
   if (datetime.seconds() == 0) {
-    comfortGuage.display(weather.getTemperature());
-    lcd.updateDisplay(
-      datetime.dateToString(),
-      datetime.timeToString() + " " + weather.toString());
+    updateVisuals();
   }
 
   delay(loopInterval);
+}
+
+// Refreshes the visual outputs, including:
+// - LCD
+// - Comfort Indicator
+void updateVisuals() {
+  log("Updating visuals");
+  if (!weather.error())
+    comfortGuage.display(weather.getTemperature());
+  else comfortGuage.displayWarning();
+
+  lcd.updateDisplay(
+    datetime.dateToString(),
+    datetime.timeToString() + " " + weather.toString());
+}
+
+// Writes a string to the serial console for logging
+void log(String text) {
+  Serial.println(
+    datetime.dateToString() + " " + datetime.timeToString() + ": " + text);
 }
