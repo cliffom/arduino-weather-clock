@@ -142,15 +142,15 @@ public:
   }
 };
 
-class ComfortGuage {
+class ComfortIndicator {
 private:
   int BlueLED;
   int GreenLED;
   int RedLED;
   const int Intensity = 64;
 public:
-  // Constructor that tells the guage what pins to use for LEDs.
-  ComfortGuage(int bluePin, int greenPin, int redPin) {
+  // Constructor that tells the indicator what pins to use for LEDs.
+  ComfortIndicator(int bluePin, int greenPin, int redPin) {
     BlueLED = bluePin;
     GreenLED = greenPin;
     RedLED = redPin;
@@ -238,8 +238,8 @@ Display lcd(12, 11, 10, 9, 8, 7);
 Weather weather(2);
 Datetime datetime;
 
-// Initialize our comfort guage on pins 4, 5, and 6
-ComfortGuage comfortGuage(4, 5, 6);
+// Initialize our comfort indicator on pins 4, 5, and 6
+ComfortIndicator comfortIndicator(4, 5, 6);
 
 void setup() {
   Serial.begin(9600);
@@ -282,8 +282,8 @@ void loop() {
 void updateVisuals() {
   log("Updating visuals");
   if (!weather.error())
-    comfortGuage.display(weather.getTemperature());
-  else comfortGuage.displayWarning();
+    comfortIndicator.display(weather.getTemperature());
+  else comfortIndicator.displayWarning();
 
   lcd.updateDisplay(
     datetime.dateToString(),
