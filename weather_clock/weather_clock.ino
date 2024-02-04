@@ -87,16 +87,6 @@ public:
     Humidity = dht11.readHumidity();
   }
 
-  // Returns the last read temperature value.
-  int getTemperature() {
-    return Temperature;
-  }
-
-  // Returns the last read humidity value.
-  int getHumidity() {
-    return Humidity;
-  }
-
   // Returns a string representation of the current weather data in "temperatureC humidity%" format.
   String toString() {
     String temperature = String(Temperature, DEC);
