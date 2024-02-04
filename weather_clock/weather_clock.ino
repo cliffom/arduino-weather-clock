@@ -87,12 +87,54 @@ public:
     Humidity = dht11.readHumidity();
   }
 
+  // Returns the temperature as of the last sensor reading.
+  int getTemperature() {
+    return Temperature;
+  }
+
   // Returns a string representation of the current weather data in "temperatureC humidity%" format.
   String toString() {
     String temperature = String(Temperature, DEC);
     String humidity = String(Humidity, DEC);
 
     return temperature + "C " + humidity + "%";
+  }
+};
+
+class ComfortGuage {
+private:
+  int ColdPin;
+  int NormalPin;
+  int HotPin;
+public:
+  // Constructor that tells the guage what pins to use for LEDs.
+  ComfortGuage(int coldPin, int normalPin, int hotPin) {
+    ColdPin = coldPin;
+    NormalPin = normalPin;
+    HotPin = hotPin;
+
+    reset();
+  }
+
+  // Sets all pins to LOW/no signal
+  void reset() {
+    digitalWrite(ColdPin, LOW);
+    digitalWrite(NormalPin, LOW);
+    digitalWrite(HotPin, LOW);
+  }
+
+  // Sets which LED to enable based on a rough temperate range of:
+  // - Hot when temperature >=30
+  // - Normal when temperature < 30 but >= 21
+  // - Cold when temperature <21
+  void display(int temperature) {
+    reset();
+    if (temperature >= 30)
+      digitalWrite(HotPin, HIGH);
+    else if (temperature >= 21)
+      digitalWrite(NormalPin, HIGH);
+    else
+      digitalWrite(ColdPin, HIGH);
   }
 };
 
@@ -143,8 +185,12 @@ public:
 // - d2=7
 Display lcd(12, 11, 10, 9, 8, 7);
 
+// Initialize our weather sensor on pin 2
 Weather weather(2);
 Datetime datetime;
+
+// Initialize our comfort guage on pins 4, 5, and 6
+ComfortGuage comfortGuage(4, 5, 6);
 
 void setup() {
   Serial.begin(9600);
@@ -155,6 +201,7 @@ void setup() {
 
   weather.update();
   datetime.refresh();
+  comfortGuage.display(weather.getTemperature());
 
   lcd.updateDisplay(
     datetime.dateToString(),
@@ -179,6 +226,7 @@ void loop() {
   }
 
   if (datetime.seconds() == 0) {
+    comfortGuage.display(weather.getTemperature());
     lcd.updateDisplay(
       datetime.dateToString(),
       datetime.timeToString() + " " + weather.toString());
