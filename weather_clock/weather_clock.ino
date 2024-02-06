@@ -104,21 +104,30 @@ public:
     // Check for temperature error
     if (temperatureError()) {
       errorFlag = true;
-      Serial.println("Error: DHT11 Temperature Error");
     }
 
     // Check for humidity error
     if (humidityError()) {
       errorFlag = true;
-      Serial.println("Error: DHT11 Humidity Error");
     }
 
     return errorFlag;
   }
 
-  // Returns the temperature as of the last sensor reading.
+  // Returns the temperature as of the last sensor reading
   int getTemperature() {
+    if (temperatureError())
+      return -1;
+
     return Temperature;
+  }
+
+  // Returns the humidity as of the last sensor reading
+  int getHumidity() {
+    if (humidityError())
+      return -1;
+
+    return Humidity;
   }
 
   // Returns a string representation of the current weather data in "temperatureC humidity%" format.
@@ -243,14 +252,14 @@ ComfortIndicator comfortIndicator(4, 5, 6);
 
 void setup() {
   Serial.begin(9600);
-  Serial.println("Serial communication initialized");
 
   // uncomment below to set the time
-  //datetime.set(0, 45, 11, 7, 3, 2, 24);
+  //datetime.set(0, 6, 15, 2, 3, 5, 24);
 
   weather.update();
   datetime.refresh();
   updateVisuals();
+  sendDataToSerial();
 }
 
 void loop() {
@@ -265,8 +274,8 @@ void loop() {
   // Check if weatherUpdateInterval/1000 seconds have passed
   if (currentMillis - lastWeatherUpdate >= weatherUpdateInterval) {
     weather.update();
+    sendDataToSerial();
     lastWeatherUpdate = currentMillis;
-    log("Weather data updated");
   }
 
   if (datetime.seconds() == 0) {
@@ -280,7 +289,6 @@ void loop() {
 // - LCD
 // - Comfort Indicator
 void updateVisuals() {
-  log("Updating visuals");
   if (!weather.error())
     comfortIndicator.display(weather.getTemperature());
   else comfortIndicator.displayWarning();
@@ -290,8 +298,16 @@ void updateVisuals() {
     datetime.timeToString() + " " + weather.toString());
 }
 
-// Writes a string to the serial console for logging
-void log(String text) {
+void sendDataToSerial() {
+  String temperature = String(weather.getTemperature(), DEC);
+  String humidity = String(weather.getHumidity(), DEC);
+  String error = String(weather.error(), DEC);
+  const String location = "office";
+
   Serial.println(
-    datetime.dateToString() + " " + datetime.timeToString() + ": " + text);
+    "error:" + error
+    + ",location:" + location
+    + ",temperature:" + temperature
+    + ",humidity:" + humidity
+  );
 }
