@@ -77,16 +77,6 @@ private:
   int Humidity;
   int SensorStatus = 0;
 
-  // Checks if the temperature sensor returned an error
-  bool temperatureError() {
-    return Temperature == DHT11::ERROR_CHECKSUM || Temperature == DHT11::ERROR_TIMEOUT;
-  }
-
-  // Checks if the humidity sensor returned an error
-  bool humidityError() {
-    return Humidity == DHT11::ERROR_TIMEOUT || Humidity == DHT11::ERROR_CHECKSUM;
-  }
-
 public:
   // Constructor initializes the DHT11 sensor with the given pin.
   Weather(int pin)
@@ -113,7 +103,7 @@ public:
 
   // Returns the temperature as of the last sensor reading
   int getTemperature() {
-    if (temperatureError())
+    if (error())
       return -1;
 
     return Temperature;
@@ -121,7 +111,7 @@ public:
 
   // Returns the humidity as of the last sensor reading
   int getHumidity() {
-    if (humidityError())
+    if (error())
       return -1;
 
     return Humidity;
@@ -132,15 +122,11 @@ public:
     String temperature;
     String humidity;
 
-    if (temperatureError()) {
+    if (error()) {
       temperature = "--";
-    } else {
-      temperature = String(Temperature, DEC);
-    }
-
-    if (humidityError()) {
       humidity = "--";
     } else {
+      temperature = String(Temperature, DEC);
       humidity = String(Humidity, DEC);
     }
 
