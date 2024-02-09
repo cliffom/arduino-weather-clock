@@ -72,9 +72,10 @@ public:
 
 class Weather {
 private:
-  DHT11 dht11;      // DHT11 sensor instance for reading temperature and humidity.
-  int Temperature;  // Variable to store the last read temperature value.
-  int Humidity;     // Variable to store the last read humidity value.
+  DHT11 dht11;
+  int Temperature;
+  int Humidity;
+  int SensorStatus = 0;
 
   // Checks if the temperature sensor returned an error
   bool temperatureError() {
@@ -93,25 +94,12 @@ public:
 
   // Reads and updates the current temperature and humidity from the DHT11 sensor.
   void update() {
-    Temperature = dht11.readTemperature();
-    Humidity = dht11.readHumidity();
+    SensorStatus = dht11.readTemperatureHumidity(Temperature, Humidity);
   }
 
   // Checks to see if either sensor value was an error value
   bool error() {
-    bool errorFlag = false;
-
-    // Check for temperature error
-    if (temperatureError()) {
-      errorFlag = true;
-    }
-
-    // Check for humidity error
-    if (humidityError()) {
-      errorFlag = true;
-    }
-
-    return errorFlag;
+    return !(SensorStatus == 0);
   }
 
   // Returns the temperature as of the last sensor reading
