@@ -102,6 +102,15 @@ public:
     return !(SensorStatus == 0);
   }
 
+  // Gets a string representation of the sensor status
+  String status() {
+    if (!error()) {
+      return "ok";
+    } else {
+      return DHT11::getErrorString(SensorStatus);
+    }
+  }
+
   // Returns the temperature as of the last sensor reading
   int getTemperature() {
     if (temperatureError())
@@ -290,10 +299,12 @@ void sendDataToSerial() {
   String temperature = String(weather.getTemperature(), DEC);
   String humidity = String(weather.getHumidity(), DEC);
   String error = String(weather.error(), DEC);
+  String status = weather.status();
   const String location = "office";
 
   Serial.println(
     "error:" + error
+    + ",status:" + status
     + ",location:" + location
     + ",temperature:" + temperature
     + ",humidity:" + humidity
