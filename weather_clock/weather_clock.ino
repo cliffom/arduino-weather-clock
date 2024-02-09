@@ -272,9 +272,11 @@ void loop() {
 // - LCD
 // - Comfort Indicator
 void updateVisuals() {
-  if (!weather.error())
+  if (weather.error()) {
+    comfortIndicator.displayWarning();
+  } else {
     comfortIndicator.display(weather.getTemperature());
-  else comfortIndicator.displayWarning();
+  }
 
   lcd.updateDisplay(
     datetime.dateToString(),
@@ -293,6 +295,5 @@ void sendDataToSerial() {
     + ",status:" + status
     + ",location:" + location
     + ",temperature:" + temperature
-    + ",humidity:" + humidity
-  );
+    + ",humidity:" + humidity);
 }
