@@ -1,39 +1,45 @@
 #include "Arduino.h"
+#include "arduino-timer.h"
 #include "DHT11.h"
 #include "LiquidCrystal.h"
 #include "uRTCLib.h"
 
-class Datetime {
+class Datetime
+{
 private:
   // Real-Time Clock (RTC) library instance for accessing time data.
   uRTCLib rtc;
 
   // Array of day names in shorthand format, used for formatting dates.
-  const String daysOfTheWeek[7] = { "Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat" };
+  const String daysOfTheWeek[7] = {"Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"};
 
   // Array of month names in shorthand format, used for formatting dates.
-  const String monthsOfTheYear[12] = { "Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec" };
+  const String monthsOfTheYear[12] = {"Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"};
 
 public:
   // Constructor initializes the RTC with a default address.
   Datetime()
-    : rtc(0x68) {
+      : rtc(0x68)
+  {
     // Starts communication with the RTC module.
     URTCLIB_WIRE.begin();
   }
 
   // Sets the current date and time on the RTC module.
-  void set(int sec, int min, int hour, int dayOfWeek, int dayOfMonth, int month, int year) {
-    rtc.set(sec, min, hour, dayOfWeek, dayOfMonth, month, year);  // Sets the time and date.
+  void set(int sec, int min, int hour, int dayOfWeek, int dayOfMonth, int month, int year)
+  {
+    rtc.set(sec, min, hour, dayOfWeek, dayOfMonth, month, year); // Sets the time and date.
   }
 
   // Refreshes the RTC data to ensure it has the latest date and time.
-  void refresh() {
+  void refresh()
+  {
     rtc.refresh();
   }
 
   // Returns a string representation of the current date in a human-readable format.
-  String dateToString() {
+  String dateToString()
+  {
     String day = String(rtc.day(), DEC);
     String year = String(rtc.year(), DEC);
 
@@ -48,7 +54,8 @@ public:
   }
 
   // Returns a string representation of the current time in HH:MM format.
-  String timeToString() {
+  String timeToString()
+  {
     String hours = String(rtc.hour(), DEC);
     String minutes = String(rtc.minute(), DEC);
 
@@ -65,12 +72,14 @@ public:
   }
 
   // Returns the current seconds from the RTC.
-  int seconds() {
+  int seconds()
+  {
     return rtc.second();
   }
 };
 
-class Weather {
+class Weather
+{
 private:
   DHT11 dht11;
   int Temperature;
@@ -80,29 +89,36 @@ private:
 public:
   // Constructor initializes the DHT11 sensor with the given pin.
   Weather(int pin)
-    : dht11(pin) {}
+      : dht11(pin) {}
 
   // Reads and updates the current temperature and humidity from the DHT11 sensor.
-  void update() {
+  void update()
+  {
     SensorStatus = dht11.readTemperatureHumidity(Temperature, Humidity);
   }
 
   // Checks to see if either sensor value was an error value
-  bool error() {
+  bool error()
+  {
     return !(SensorStatus == 0);
   }
 
   // Gets a string representation of the sensor status
-  String status() {
-    if (!error()) {
+  String status()
+  {
+    if (!error())
+    {
       return "ok";
-    } else {
+    }
+    else
+    {
       return DHT11::getErrorString(SensorStatus);
     }
   }
 
   // Returns the temperature as of the last sensor reading
-  int getTemperature() {
+  int getTemperature()
+  {
     if (error())
       return -1;
 
@@ -110,7 +126,8 @@ public:
   }
 
   // Returns the humidity as of the last sensor reading
-  int getHumidity() {
+  int getHumidity()
+  {
     if (error())
       return -1;
 
@@ -118,14 +135,18 @@ public:
   }
 
   // Returns a string representation of the current weather data in "temperatureC humidity%" format.
-  String toString() {
+  String toString()
+  {
     String temperature;
     String humidity;
 
-    if (error()) {
+    if (error())
+    {
       temperature = "--";
       humidity = "--";
-    } else {
+    }
+    else
+    {
       temperature = String(Temperature, DEC);
       humidity = String(Humidity, DEC);
     }
@@ -134,15 +155,18 @@ public:
   }
 };
 
-class ComfortIndicator {
+class ComfortIndicator
+{
 private:
   int BlueLED;
   int GreenLED;
   int RedLED;
   const int Intensity = 64;
+
 public:
   // Constructor that tells the indicator what pins to use for LEDs.
-  ComfortIndicator(int bluePin, int greenPin, int redPin) {
+  ComfortIndicator(int bluePin, int greenPin, int redPin)
+  {
     BlueLED = bluePin;
     GreenLED = greenPin;
     RedLED = redPin;
@@ -151,7 +175,8 @@ public:
   }
 
   // Sets all pins to LOW/no signal
-  void reset() {
+  void reset()
+  {
     analogWrite(BlueLED, 0);
     analogWrite(GreenLED, 0);
     analogWrite(RedLED, 0);
@@ -161,7 +186,8 @@ public:
   // - Hot when temperature >=30
   // - Normal when temperature < 30 but >= 21
   // - Cold when temperature <21
-  void display(int temperature) {
+  void display(int temperature)
+  {
     reset();
     if (temperature >= 30)
       analogWrite(RedLED, Intensity);
@@ -172,14 +198,16 @@ public:
   }
 
   // Turns the LED yellow to indicate that there was an issue
-  void displayWarning() {
+  void displayWarning()
+  {
     reset();
     analogWrite(RedLED, Intensity);
     analogWrite(GreenLED, Intensity);
   }
 };
 
-class Display {
+class Display
+{
 private:
   // Instance of LiquidCrystal for LCD control.
   LiquidCrystal lcd;
@@ -193,24 +221,28 @@ private:
 public:
   // Constructor initializes the LCD display with specified pins and dimensions.
   Display(int rs, int en, int d4, int d5, int d6, int d7)
-    : lcd(rs, en, d4, d5, d6, d7) {
+      : lcd(rs, en, d4, d5, d6, d7)
+  {
     lcd.begin(width, height);
   }
 
   // Sets the text displayed on the first line of the LCD.
-  void setLine1(String text) {
+  void setLine1(String text)
+  {
     lcd.setCursor(0, 0);
     lcd.print(text);
   }
 
   // Sets the text displayed on the second line of the LCD.
-  void setLine2(String text) {
+  void setLine2(String text)
+  {
     lcd.setCursor(0, 1);
     lcd.print(text);
   }
 
   // Sets the text displayed on the LCD.
-  void updateDisplay(String line1, String line2) {
+  void updateDisplay(String line1, String line2)
+  {
     lcd.clear();
     setLine1(line1);
     setLine2(line2);
@@ -233,57 +265,47 @@ Datetime datetime;
 // Initialize our comfort indicator on pins 4, 5, and 6
 ComfortIndicator comfortIndicator(4, 5, 6);
 
-void setup() {
+auto timer = timer_create_default();
+
+void setup()
+{
   Serial.begin(9600);
 
   // uncomment below to set the time
-  //datetime.set(0, 6, 15, 2, 3, 5, 24);
+  // datetime.set(0, 41, 16, 3, 13, 2, 24);
 
-  weather.update();
   datetime.refresh();
+  weather.update();
   updateVisuals();
-  sendDataToSerial();
+
+  timer.every(1000, updateDateTimeAndDisplay);
+  timer.every(60000, updateWeatherAndSendToSerial);
 }
 
-void loop() {
-  const unsigned long weatherUpdateInterval = 60000;
-  const unsigned long loopInterval = 1000;
-
-  static unsigned long lastWeatherUpdate = 0;
-  unsigned long currentMillis = millis();
-
-  datetime.refresh();
-
-  // Check if weatherUpdateInterval/1000 seconds have passed
-  if (currentMillis - lastWeatherUpdate >= weatherUpdateInterval) {
-    weather.update();
-    sendDataToSerial();
-    lastWeatherUpdate = currentMillis;
-  }
-
-  if (datetime.seconds() == 0) {
-    updateVisuals();
-  }
-
-  delay(loopInterval);
+void loop()
+{
+  timer.tick();
 }
 
 // Refreshes the visual outputs, including:
 // - LCD
 // - Comfort Indicator
-void updateVisuals() {
-  if (weather.error()) {
+void updateVisuals()
+{
+  if (weather.error())
     comfortIndicator.displayWarning();
-  } else {
+  else
     comfortIndicator.display(weather.getTemperature());
-  }
 
   lcd.updateDisplay(
-    datetime.dateToString(),
-    datetime.timeToString() + " " + weather.toString());
+      datetime.dateToString(),
+      datetime.timeToString() + " " + weather.toString());
 }
 
-void sendDataToSerial() {
+// Sends data to the serial console in the format
+// error:0,status:ok,location:office,temperature:25,humidity:16
+void sendDataToSerial()
+{
   String temperature = String(weather.getTemperature(), DEC);
   String humidity = String(weather.getHumidity(), DEC);
   String error = String(weather.error(), DEC);
@@ -291,9 +313,26 @@ void sendDataToSerial() {
   const String location = "office";
 
   Serial.println(
-    "error:" + error
-    + ",status:" + status
-    + ",location:" + location
-    + ",temperature:" + temperature
-    + ",humidity:" + humidity);
+      "error:" + error + ",status:" + status + ",location:" + location + ",temperature:" + temperature + ",humidity:" + humidity);
+}
+
+// Helper function to update the datetime and refresh the display
+bool updateDateTimeAndDisplay(void *)
+{
+  datetime.refresh();
+  if (datetime.seconds() == 0)
+  {
+    updateVisuals();
+  }
+
+  return true;
+}
+
+// Helper function to update the weather and send the data to serial
+bool updateWeatherAndSendToSerial(void *)
+{
+  weather.update();
+  sendDataToSerial();
+
+  return true;
 }
