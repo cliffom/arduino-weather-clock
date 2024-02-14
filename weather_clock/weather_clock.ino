@@ -107,13 +107,9 @@ public:
   String status()
   {
     if (!error())
-    {
       return "ok";
-    }
     else
-    {
       return DHT11::getErrorString(SensorStatus);
-    }
   }
 
   // Returns the temperature as of the last sensor reading
@@ -321,9 +317,7 @@ bool updateDateTimeAndDisplay(void *)
 {
   datetime.refresh();
   if (datetime.seconds() == 0)
-  {
     updateVisuals();
-  }
 
   return true;
 }
