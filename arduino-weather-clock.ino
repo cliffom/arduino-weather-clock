@@ -185,7 +185,7 @@ public:
   void display(int temperature)
   {
     reset();
-    if (temperature >= 30)
+    if (temperature >= 25)
       analogWrite(RedLED, Intensity);
     else if (temperature >= 21)
       analogWrite(GreenLED, Intensity);
@@ -268,7 +268,7 @@ void setup()
   Serial.begin(9600);
 
   // uncomment below to set the time
-  // datetime.set(0, 41, 16, 3, 13, 2, 24);
+  // datetime.set(0, 15, 16, 3, 14, 2, 24);
 
   datetime.refresh();
   weather.update();
