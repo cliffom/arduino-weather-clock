@@ -16,7 +16,7 @@
 Display lcd(12, 11, 10, 9, 8, 7);
 
 // Initialize our climate sensor on pin 2
-Climate climate(2);
+Climate climate(2, "Office");
 Datetime datetime;
 
 // Initialize our comfort indicator on pins 4, 5, and 6
@@ -29,7 +29,7 @@ void setup()
   Serial.begin(9600);
 
   // uncomment below to set the time
-  // datetime.set(0, 15, 16, 3, 14, 2, 24);
+  // datetime.set(0, 19, 12, 5, 15, 2, 24);
 
   datetime.refresh();
   climate.update();
@@ -68,11 +68,9 @@ void sendDataToSerial()
   String temperature = String(climate.getTemperature(), DEC);
   String humidity = String(climate.getHumidity(), DEC);
   String error = String(climate.error(), DEC);
-  String status = climate.status();
-  const String location = "office";
-
+  
   Serial.println(
-      "error:" + error + ",status:" + status + ",location:" + location + ",temperature:" + temperature + ",humidity:" + humidity);
+      "error:" + error + ",status:" + climate.status() + ",location:" + climate.getLocation() + ",temperature:" + temperature + ",humidity:" + humidity);
 }
 
 // Helper function to update the datetime and refresh the display
